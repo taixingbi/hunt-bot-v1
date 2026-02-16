@@ -38,6 +38,28 @@ function parseStreamLine(line: string): OrchestratorEvent | null {
   return null;
 }
 
+function processEvent(
+  ev: OrchestratorEvent,
+  ctx: { rewriteText: string | null; requestId: string; send: (event: string, data: unknown) => void }
+): string | null {
+  const { rewriteText, requestId, send } = ctx;
+  if (ev.type === "rewrite" && "text" in ev) {
+    const text = (ev as { text: string }).text;
+    console.log("[stream] rewrite:", text);
+    return text;
+  }
+  if (ev.type === "answer" && "text" in ev) {
+    const answerEv = ev as { text: string; agent_graph_run_id?: string };
+    console.log("[stream] answer:", answerEv.text ?? "");
+    send("result", {
+      rewrite: rewriteText,
+      response: answerEv.text ?? "",
+      run_id: answerEv.agent_graph_run_id ?? requestId,
+    });
+  }
+  return rewriteText;
+}
+
 export async function POST(req: NextRequest) {
   const { message } = (await req.json()) as { message?: string };
   if (!message || typeof message !== "string") {
@@ -97,40 +119,18 @@ export async function POST(req: NextRequest) {
           for (const line of lines) {
             const ev = parseStreamLine(line);
             if (!ev) continue;
-
             if (ev.type === "state" && "message" in ev && "phase" in ev && ev.phase !== "done") {
               console.log("[stream] status:", ev.message);
               send("status", ev.message);
-            } else if (ev.type === "rewrite" && "text" in ev) {
-              rewriteText = (ev as { text: string }).text;
-              console.log("[stream] rewrite:", rewriteText);
-            } else if (ev.type === "answer" && "text" in ev) {
-              const answerEv = ev as { text: string; agent_graph_run_id?: string };
-              console.log("[stream] answer:", answerEv.text ?? "");
-              send("result", {
-                rewrite: rewriteText,
-                response: answerEv.text ?? "",
-                run_id: answerEv.agent_graph_run_id ?? requestId,
-              });
+            } else {
+              rewriteText = processEvent(ev, { rewriteText, requestId, send });
             }
           }
         }
 
         if (buffer.trim()) {
           const ev = parseStreamLine(buffer);
-          if (ev?.type === "rewrite" && "text" in ev) {
-            rewriteText = (ev as { text: string }).text;
-            console.log("[stream] rewrite:", rewriteText);
-          }
-          if (ev?.type === "answer" && "text" in ev) {
-            const answerEv = ev as { text: string; agent_graph_run_id?: string };
-            console.log("[stream] answer:", answerEv.text ?? "");
-            send("result", {
-              rewrite: rewriteText,
-              response: answerEv.text ?? "",
-              run_id: answerEv.agent_graph_run_id ?? requestId,
-            });
-          }
+          if (ev) rewriteText = processEvent(ev, { rewriteText, requestId, send });
         }
       } catch (err) {
         send("error", err instanceof Error ? err.message : String(err));

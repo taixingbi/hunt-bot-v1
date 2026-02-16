@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 
 type Message = { id: string; role: "user" | "assistant"; content: string; run_id?: string };
 type Status = "thinking" | "searching_sql" | "cached" | "error" | null;
@@ -28,18 +28,19 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<Status>(null);
-  const [rewriteText, setRewriteText] = useState<string | null>(null);
   const [thumbsUp, setThumbsUp] = useState<Set<string>>(new Set());
   const [thumbsDown, setThumbsDown] = useState<Set<string>>(new Set());
   const [feedbackModal, setFeedbackModal] = useState<{ messageId: string; runId?: string; question?: string } | null>(null);
+  const [feedbackComment, setFeedbackComment] = useState("");
   const [streamingVisibleLength, setStreamingVisibleLength] = useState(0);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [streamingPrefixLength, setStreamingPrefixLength] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const lastAssistantId = messages.length > 0
-    ? [...messages].reverse().find((m) => m.role === "assistant")?.id ?? null
-    : null;
+  const lastAssistantId = useMemo(
+    () => (messages.length > 0 ? [...messages].reverse().find((m) => m.role === "assistant")?.id ?? null : null),
+    [messages]
+  );
 
   const handleThumbsUp = useCallback(async (message: Message) => {
     if (!message.run_id) return;
@@ -63,12 +64,14 @@ export default function ChatPage() {
   const handleThumbsDown = useCallback((message: Message) => {
     const idx = messages.findIndex((m) => m.id === message.id);
     const question = idx > 0 && messages[idx - 1]?.role === "user" ? messages[idx - 1].content : undefined;
+    setFeedbackComment("");
     setFeedbackModal({ messageId: message.id, runId: message.run_id, question });
   }, [messages]);
 
   const handleFeedbackReason = useCallback(
     async (reason: string) => {
       if (!feedbackModal?.runId) return;
+      const comment = feedbackComment.trim() || undefined;
       try {
         await fetch("/api/feedback", {
           method: "POST",
@@ -78,6 +81,7 @@ export default function ChatPage() {
             feedback_type: "thumbs_down",
             reason,
             question: feedbackModal.question,
+            ...(comment && { comment }),
           }),
         });
         setThumbsDown((prev) => new Set(prev).add(feedbackModal.messageId));
@@ -90,9 +94,10 @@ export default function ChatPage() {
         // ignore
       } finally {
         setFeedbackModal(null);
+        setFeedbackComment("");
       }
     },
-    [feedbackModal]
+    [feedbackModal, feedbackComment]
   );
 
   const handleCopy = useCallback(async (text: string) => {
@@ -180,7 +185,6 @@ export default function ChatPage() {
       setStreamingVisibleLength(0);
       setMessages((prev) => [...prev, { id, role: "assistant", content: fullContent, run_id: obj.run_id }]);
       setStatus(null);
-      setRewriteText(null);
       setLoading(false);
       return;
     }
@@ -190,7 +194,6 @@ export default function ChatPage() {
         { id: nextId(), role: "assistant", content: `Error: ${data}` },
       ]);
       setStatus(null);
-      setRewriteText(null);
       setLoading(false);
     }
   }, [streamingMessageId]);
@@ -203,7 +206,6 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, { id: nextId(), role: "user", content: userMessage }]);
     setLoading(true);
     setStatus(null);
-    setRewriteText(null);
     setStreamingMessageId(null);
     setStreamingPrefixLength(0);
     if (intervalRef.current) {
@@ -409,17 +411,17 @@ export default function ChatPage() {
                       </svg>
                     </button>
                     {msg.id === lastAssistantId && (
-                    <button
-                      type="button"
-                      onClick={() => handleRegenerate(msg)}
-                      className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                      aria-label="Regenerate"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <path d="M1 4v6h6" />
-                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                      </svg>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRegenerate(msg)}
+                        className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        aria-label="Regenerate"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M1 4v6h6" />
+                          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                        </svg>
+                      </button>
                     )}
                   </div>
                 )}
@@ -435,11 +437,6 @@ export default function ChatPage() {
                   <span className="w-2 h-2 rounded-full bg-current opacity-60 animate-bounce [animation-delay:300ms]" />
                 </span>
                 <span>{statusLabel}</span>
-                {rewriteText && (
-                  <p className="mt-2 text-sm opacity-80 max-w-full truncate" title={rewriteText}>
-                    I think your question is: {rewriteText}
-                  </p>
-                )}
               </div>
             </div>
           )}
@@ -474,7 +471,7 @@ export default function ChatPage() {
       </form>
 
       {feedbackModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setFeedbackModal(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => { setFeedbackModal(null); setFeedbackComment(""); }}>
           <div
             className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
@@ -486,7 +483,7 @@ export default function ChatPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setFeedbackModal(null)}
+                onClick={() => { setFeedbackModal(null); setFeedbackComment(""); }}
                 className="p-1 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Close"
               >
@@ -495,7 +492,7 @@ export default function ChatPage() {
                 </svg>
               </button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {FEEDBACK_REASONS.map(({ id, label }) => (
                 <button
                   key={id}
@@ -506,6 +503,16 @@ export default function ChatPage() {
                   {label}
                 </button>
               ))}
+              <label className="block">
+                <span className="text-sm text-gray-500 dark:text-gray-400">Additional details (optional)</span>
+                <textarea
+                  value={feedbackComment}
+                  onChange={(e) => setFeedbackComment(e.target.value)}
+                  placeholder="e.g. Only returned 3 titles"
+                  rows={2}
+                  className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 text-sm resize-none"
+                />
+              </label>
             </div>
           </div>
         </div>

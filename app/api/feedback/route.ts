@@ -3,14 +3,14 @@ import { config } from "@/lib/config";
 
 export const runtime = "nodejs";
 
-const THUMBS_DOWN_REASONS = [
+const VALID_FEEDBACK_TYPES = new Set(["thumbs_up", "thumbs_down"] as const);
+const THUMBS_DOWN_REASONS = new Set([
   "not_factually_correct",
   "didnt_follow_instructions",
   "offensive_unsafe",
   "wrong_language",
   "other",
-] as const;
-
+]);
 const REASON_TO_ORCHESTRATOR: Record<string, string> = {
   not_factually_correct: "not_factual",
   didnt_follow_instructions: "didnt_follow_instructions",
@@ -30,18 +30,10 @@ export async function POST(req: NextRequest) {
   if (!body.run_id) {
     return NextResponse.json({ error: "Missing run_id" }, { status: 400 });
   }
-  if (
-    body.feedback_type !== undefined &&
-    body.feedback_type !== "thumbs_up" &&
-    body.feedback_type !== "thumbs_down"
-  ) {
+  if (body.feedback_type !== undefined && !VALID_FEEDBACK_TYPES.has(body.feedback_type)) {
     return NextResponse.json({ error: "feedback_type must be thumbs_up or thumbs_down" }, { status: 400 });
   }
-  if (
-    body.feedback_type === "thumbs_down" &&
-    body.reason !== undefined &&
-    !THUMBS_DOWN_REASONS.includes(body.reason as (typeof THUMBS_DOWN_REASONS)[number])
-  ) {
+  if (body.feedback_type === "thumbs_down" && body.reason !== undefined && !THUMBS_DOWN_REASONS.has(body.reason)) {
     return NextResponse.json({ error: "Invalid reason" }, { status: 400 });
   }
 
