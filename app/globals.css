@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Söhne", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+/* ChatGPT-style chat */
+.chat-container {
+  max-width: 48rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.chat-user-bubble {
+  background: #10a37f;
+  color: #fff;
+}
+.chat-assistant-bubble {
+  background: #f7f7f8;
+  color: #0d0d0d;
+}
+.chat-input-wrap {
+  background: #f7f7f8;
+  border: 1px solid #e5e5e5;
+}
+.chat-input-wrap:focus-within {
+  border-color: #10a37f;
+  box-shadow: 0 0 0 1px #10a37f;
+}
+@media (prefers-color-scheme: dark) {
+  .chat-assistant-bubble {
+    background: #2f2f2f;
+    color: #ececec;
+  }
+  .chat-input-wrap {
+    background: #2f2f2f;
+    border-color: #565656;
+  }
+}
