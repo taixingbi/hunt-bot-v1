@@ -14,9 +14,9 @@ let cachedOrchestratorUrl: string | null = null;
 export const config = {
   get orchestratorUrl(): string {
     if (cachedOrchestratorUrl === null) {
-      cachedOrchestratorUrl = fromEnv(
-        "ORCHESTRATOR_URL",
-        "https://mcp-orchestrator-v1-dev.fly.dev"
+      cachedOrchestratorUrl = (
+        fromEnv("MCP-TOOL_ORCHESTRATOR_URL", "") ||
+        fromEnv("ORCHESTRATOR_URL", "https://mcp-orchestrator-v1-dev.fly.dev")
       ).replace(/\/$/, "");
     }
     return cachedOrchestratorUrl;
