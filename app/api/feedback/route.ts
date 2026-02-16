@@ -11,11 +11,12 @@ const THUMBS_DOWN_REASONS = new Set([
   "wrong_language",
   "other",
 ]);
+// Orchestrator expects: biased, incomplete_instructions, not_factual, not_relevant, other, style_tone, unsafe
 const REASON_TO_ORCHESTRATOR: Record<string, string> = {
   not_factually_correct: "not_factual",
-  didnt_follow_instructions: "didnt_follow_instructions",
-  offensive_unsafe: "offensive_unsafe",
-  wrong_language: "wrong_language",
+  didnt_follow_instructions: "incomplete_instructions",
+  offensive_unsafe: "unsafe",
+  wrong_language: "not_relevant",
   other: "other",
 };
 
@@ -45,8 +46,9 @@ export async function POST(req: NextRequest) {
   if (body.feedback_type === "thumbs_down" && body.reason) {
     payload.feedback_type = REASON_TO_ORCHESTRATOR[body.reason] ?? body.reason;
   }
-  if (body.question) payload.question = body.question;
   if (body.comment) payload.comment = body.comment;
+
+  console.log("[feedback] payload:", JSON.stringify(payload, null, 2));
 
   try {
     const res = await fetch(`${config.orchestratorUrl}/feedback`, {
@@ -55,9 +57,19 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(10_000),
     });
+    const responseText = await res.text();
+    console.log("[feedback] response:", res.status, responseText);
+
     if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ error: `Orchestrator: ${res.status} ${err}` }, { status: 502 });
+      return NextResponse.json({ error: `Orchestrator: ${res.status} ${responseText}` }, { status: 502 });
+    }
+    try {
+      const parsed = JSON.parse(responseText || "{}") as { status?: string; message?: string };
+      if (parsed.status === "error") {
+        return NextResponse.json({ error: `Orchestrator: ${parsed.message ?? responseText}` }, { status: 502 });
+      }
+    } catch {
+      // ignore parse errors, treat as success
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
