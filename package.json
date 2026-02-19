@@ -1,6 +1,6 @@
 {
   "name": "starter",
-  "version": "0.1.0",
+  "version": "1.0.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,8 +9,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "docker:build": "docker build -t holly-bot .",
-    "docker:run": "docker run -p 3000:3000 --env-file .env.local holly-bot"
+    "docker:build": "docker build -t hunt-bot .",
+    "docker:run": "docker run -p 3000:3000 --env-file .env.local hunt-bot"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
