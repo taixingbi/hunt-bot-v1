@@ -325,10 +325,13 @@ export default function ChatPage() {
           {messages.length === 0 && !loading && (
             <div className="flex flex-col items-center justify-center pt-16 text-center">
               <p className="text-2xl font-medium text-gray-400 dark:text-gray-500 mb-2">
-                How can I help you today?
+              Ask anything about taixing?
               </p>
               <p className="text-sm text-gray-400 dark:text-gray-500">
-                Ask about jobs, salaries, or anything else.
+              Examples:
+                - Can you tell me about yourself?
+                - Why are you looking for a new opportunity?
+                - Will you now or in the future require sponsorship to work in the US
               </p>
             </div>
           )}
@@ -373,11 +376,7 @@ export default function ChatPage() {
                       <button
                         type="button"
                         onClick={() => handleThumbsUp(msg)}
-                        className={`p-1.5 rounded-md transition-colors ${
-                          thumbsUp.has(msg.id)
-                            ? "text-blue-500 bg-blue-500/10"
-                            : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`}
+                        className={`chat-icon-btn ${thumbsUp.has(msg.id) ? "active" : ""}`}
                         aria-label="Good response"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill={thumbsUp.has(msg.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -387,11 +386,7 @@ export default function ChatPage() {
                       <button
                         type="button"
                         onClick={() => handleThumbsDown(msg)}
-                        className={`p-1.5 rounded-md transition-colors ${
-                          thumbsDown.has(msg.id)
-                            ? "text-gray-500 bg-gray-500/10"
-                            : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`}
+                        className={`chat-icon-btn ${thumbsDown.has(msg.id) ? "active-down" : ""}`}
                         aria-label="Bad response"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill={thumbsDown.has(msg.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -402,7 +397,7 @@ export default function ChatPage() {
                     <button
                       type="button"
                       onClick={() => handleCopy(msg.content)}
-                      className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      className="chat-icon-btn"
                       aria-label="Copy"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -414,7 +409,7 @@ export default function ChatPage() {
                       <button
                         type="button"
                         onClick={() => handleRegenerate(msg)}
-                        className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        className="chat-icon-btn"
                         aria-label="Regenerate"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -458,7 +453,7 @@ export default function ChatPage() {
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="shrink-0 p-2 rounded-lg text-[#10a37f] hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+              className="chat-send-btn shrink-0 p-2 rounded-lg disabled:opacity-40 disabled:pointer-events-none transition-colors"
               aria-label="Send"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -484,7 +479,7 @@ export default function ChatPage() {
               <button
                 type="button"
                 onClick={() => { setFeedbackModal(null); setFeedbackComment(""); }}
-                className="p-1 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="chat-icon-btn p-1"
                 aria-label="Close"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
