@@ -1,4 +1,4 @@
-# Holly Bot (hunt-bot-v1)
+# hunt Bot (hunt-bot-v1)
 
 ## Design
 
@@ -46,7 +46,7 @@ pnpm docker:build
 pnpm docker:run
 ```
 
-Or: `docker build -t holly-bot .` then `docker run -p 3000:3000 --env-file .env.local holly-bot`. App listens on port 3000.
+Or: `docker build -t hunt-bot .` then `docker run -p 3000:3000 --env-file .env.local hunt-bot`. App listens on port 3000.
 
 ## Fly.io
 
